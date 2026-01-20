@@ -132,6 +132,16 @@
             box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1); 
         }
 
+        /* 響應式寬度控制：修正手機版 10 格拉寬至 95% */
+        .grid-wrapper-10 {
+            width: 95%;
+        }
+        @media (min-width: 640px) {
+            .grid-wrapper-10 {
+                width: 66.66%;
+            }
+        }
+
         .floating-keyboard {
             position: absolute;
             top: 95%;
@@ -225,7 +235,6 @@
                 const positionClass = isAns ? "right-0" : (type === 'num2' ? "left-1/2 -translate-x-1/2" : "left-0");
                 const maxNum = (type === 'num1' || type === 'num2') ? difficulty : 9;
 
-                // 後方答案鍵盤佈局 (0-9)
                 if (isAns) {
                     return (
                         <div className={`floating-keyboard ${positionClass} w-[220px] sm:w-[260px] bg-white border-4 border-[#f9ebbe] rounded-lg p-3 fade-in shadow-2xl`} onClick={e => e.stopPropagation()}>
@@ -249,7 +258,6 @@
                     );
                 }
 
-                // 前方題目鍵盤佈局 (0-10/15)
                 const nums = Array.from({ length: maxNum + 1 }, (_, i) => i);
                 return (
                     <div className={`floating-keyboard ${positionClass} w-[240px] sm:w-[280px] bg-white border-4 border-[#f9ebbe] rounded-lg p-4 fade-in shadow-2xl`} onClick={e => e.stopPropagation()}>
@@ -317,24 +325,24 @@
                         </div>
 
                         <div className="relative flex flex-col items-center mb-10 w-full">
-                            <div id="equation-box" className="relative flex flex-wrap items-center justify-center gap-2 sm:gap-4 py-8 px-6 sm:px-10 bg-orange-50/60 rounded-xl w-full max-w-[650px] mx-auto shadow-sm">
-                                <div className="relative">
+                            <div id="equation-box" className="relative flex flex-nowrap items-center justify-center gap-1.5 sm:gap-4 py-8 px-3 sm:px-10 bg-orange-50/60 rounded-xl w-full max-w-[650px] mx-auto shadow-sm overflow-hidden">
+                                <div className="relative flex-shrink-0">
                                     <div onClick={(e) => { e.stopPropagation(); setActiveField('num1'); }} className={`w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center text-2xl sm:text-4xl font-black rounded-lg border-[3px] sm:border-4 transition-all cursor-pointer shadow-inner ${activeField === 'num1' ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100' : 'border-blue-400 bg-blue-50 text-blue-600'}`}>
                                         {equation.num1 !== '' ? equation.num1 : <span className="opacity-20 text-lg font-normal">?</span>}
                                     </div>
                                     {activeField === 'num1' && <Keyboard type="num1" />}
                                 </div>
-                                <span className="text-3xl sm:text-5xl font-black text-orange-950 mx-0.5 sm:mx-1 select-none">
+                                <span className="text-3xl sm:text-5xl font-black text-orange-950 flex-shrink-0 select-none">
                                     {opMode === '+' ? '＋' : '－'}
                                 </span>
-                                <div className="relative">
+                                <div className="relative flex-shrink-0">
                                     <div onClick={(e) => { e.stopPropagation(); setActiveField('num2'); }} className={`w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center text-2xl sm:text-4xl font-black rounded-lg border-[3px] sm:border-4 transition-all cursor-pointer shadow-inner ${activeField === 'num2' ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100' : 'border-red-400 bg-red-50 text-red-600'}`}>
                                         {equation.num2 !== '' ? equation.num2 : <span className="opacity-20 text-lg font-normal">?</span>}
                                     </div>
                                     {activeField === 'num2' && <Keyboard type="num2" />}
                                 </div>
-                                <span className="text-3xl sm:text-5xl font-black text-orange-950 mx-0.5 sm:mx-1">＝</span>
-                                <div className="flex gap-1.5 sm:gap-2">
+                                <span className="text-3xl sm:text-5xl font-black text-orange-950 flex-shrink-0 select-none">＝</span>
+                                <div className="flex gap-1 sm:gap-2 flex-shrink-0">
                                     <div className="relative">
                                         <div onClick={(e) => { e.stopPropagation(); setActiveField('ans1'); }} className={`w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center text-2xl sm:text-4xl font-black rounded-lg border-[3px] sm:border-4 transition-all cursor-pointer shadow-inner ${activeField === 'ans1' ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100' : 'border-stone-200 bg-white text-stone-700'}`}>
                                             {equation.ans1 !== '' ? equation.ans1 : <span className="opacity-10 text-[10px] sm:text-sm font-normal">?</span>}
@@ -360,13 +368,14 @@
 
                         <div className="flex flex-row gap-4 sm:gap-6 justify-center w-full max-w-[650px] mx-auto pb-8">
                             <div className="flex flex-col flex-1 items-center">
-                                <div className="flex items-center justify-center mb-3 px-1 relative" style={{ width: difficulty === 10 ? '66.66%' : '100%' }}>
-                                    <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-blue-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md">藍色區</span>
-                                    <button onClick={() => setBlueFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-blue-500 transition-colors absolute right-0 top-1/2 -translate-y-1/2">
+                                {/* 修正：垃圾桶在手機版移動到 -right-1 避免擠壓標籤 */}
+                                <div className={`flex items-center justify-center mb-3 px-1 relative ${difficulty === 10 ? 'grid-wrapper-10' : 'w-full'}`}>
+                                    <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-blue-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md whitespace-nowrap">藍色區</span>
+                                    <button onClick={() => setBlueFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-blue-500 transition-colors absolute -right-1 sm:right-0 top-1/2 -translate-y-1/2">
                                         <Icons.Trash className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </button>
                                 </div>
-                                <div className="count-frame-container text-blue-400" style={{ width: difficulty === 10 ? '66.66%' : '100%' }}>
+                                <div className={`count-frame-container text-blue-400 ${difficulty === 10 ? 'grid-wrapper-10' : 'w-full'}`}>
                                     <div className="count-frame-grid" style={{ gridTemplateColumns: `repeat(${difficulty === 10 ? 2 : 3}, 1fr)` }}>
                                         {blueFrame.map((filled, i) => (
                                             <div key={i} className="count-frame-cell" onClick={() => handleCircleToggle(blueFrame, setBlueFrame, i)}>
@@ -377,13 +386,14 @@
                                 </div>
                             </div>
                             <div className="flex flex-col flex-1 items-center">
-                                <div className="flex items-center justify-center mb-3 px-1 relative" style={{ width: difficulty === 10 ? '66.66%' : '100%' }}>
-                                    <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-red-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md">紅色區</span>
-                                    <button onClick={() => setRedFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-red-500 transition-colors absolute right-0 top-1/2 -translate-y-1/2">
+                                {/* 修正：垃圾桶在手機版移動到 -right-1 避免擠壓標籤 */}
+                                <div className={`flex items-center justify-center mb-3 px-1 relative ${difficulty === 10 ? 'grid-wrapper-10' : 'w-full'}`}>
+                                    <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-red-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md whitespace-nowrap">紅色區</span>
+                                    <button onClick={() => setRedFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-red-500 transition-colors absolute -right-1 sm:right-0 top-1/2 -translate-y-1/2">
                                         <Icons.Trash className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </button>
                                 </div>
-                                <div className="count-frame-container text-red-400" style={{ width: difficulty === 10 ? '66.66%' : '100%' }}>
+                                <div className={`count-frame-container text-red-400 ${difficulty === 10 ? 'grid-wrapper-10' : 'w-full'}`}>
                                     <div className="count-frame-grid" style={{ gridTemplateColumns: `repeat(${difficulty === 10 ? 2 : 3}, 1fr)` }}>
                                         {redFrame.map((filled, i) => (
                                             <div key={i} className="count-frame-cell" onClick={() => handleCircleToggle(redFrame, setRedFrame, i)}>
@@ -401,11 +411,9 @@
                         <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowGuide(false)}>
                             <div className="bg-white rounded-[2rem] max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-8 border-[#f9ebbe] p-6 sm:p-10 fade-in relative custom-scrollbar" onClick={e => e.stopPropagation()}>
                                 <button onClick={() => setShowGuide(false)} className="absolute top-6 right-6 text-stone-300 hover:text-stone-50"><Icons.X className="w-6 h-6" /></button>
-                                
                                 <div className="flex flex-col items-center mb-8">
                                     <h2 className="text-3xl sm:text-4xl font-[900] text-orange-950 text-center">十格加減法：快速指南</h2>
                                 </div>
-
                                 <div className="space-y-10">
                                     <section>
                                         <h3 className="flex items-center gap-2 text-xl font-black text-orange-900 mb-4"><Icons.Bulb className="w-6 h-6" /> 為什麼要玩這個？</h3>
@@ -415,7 +423,6 @@
                                             <li className="flex gap-2"><span>•</span> 視覺化運算：操作獨立計數區，邏輯清晰可見。</li>
                                         </ul>
                                     </section>
-
                                     <section>
                                         <h3 className="flex items-center gap-2 text-xl font-black text-orange-900 mb-5">🕹️ 遊戲四部曲</h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -449,7 +456,6 @@
                                             </div>
                                         </div>
                                     </section>
-
                                     <section>
                                         <h3 className="flex items-center gap-2 text-xl font-black text-orange-900 mb-4"><Icons.Settings className="w-6 h-6" /> 教師與家長控制項</h3>
                                         <ul className="space-y-3 text-stone-600 font-bold text-base leading-relaxed ml-1">
@@ -459,7 +465,6 @@
                                         </ul>
                                     </section>
                                 </div>
-
                                 <button onClick={() => setShowGuide(false)} className="w-full mt-12 py-5 bg-orange-950 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-orange-900 transition-all">開始練習</button>
                             </div>
                         </div>
