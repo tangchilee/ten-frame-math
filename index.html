@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>十格加減法 - 數感練習工具</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        :root {
+            --preview-layout-gap: 0.75rem;
+            --primary-warm: #ff8c42;
+            --primary-dark: #433422;
+            --bg-warm: #fff7ed;
+        }
+
+        /* 全域樣式 */
+        * { font-family: 'Noto Serif TC', serif !important; box-sizing: border-box; }
+        body { 
+            background-color: var(--bg-warm); 
+            -webkit-tap-highlight-color: transparent; 
+            margin: 0; 
+            padding: 0; 
+            min-height: 100vh; 
+            overflow-x: hidden; 
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        button { outline: none; transition: all 0.2s ease; }
+
+        /* 切換開關容器 */
+        .toggle-container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2px;
+            border: 2px solid #f9ebbe;
+            display: flex;
+            height: 48px;
+            width: 100%;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            border-radius: 8px;
+            font-weight: 900;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        .toggle-btn.active { 
+            background-color: var(--primary-warm); 
+            color: white; 
+            box-shadow: 0 2px 4px rgba(255, 140, 66, 0.2); 
+        }
+
+        .toggle-btn.inactive { 
+            color: var(--primary-dark); 
+            opacity: 0.6; 
+        }
+
+        /* 功能按鈕 */
+        .unified-btn {
+            height: 48px;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: white;
+            box-shadow: 0 3px 0 rgba(0,0,0,0.12);
+            width: 100%;
+            transition: all 0.1s;
+        }
+
+        .unified-btn:active { 
+            transform: translateY(2px); 
+            box-shadow: 0 1px 0 rgba(0,0,0,0.12); 
+        }
+
+        /* 計數盒 */
+        .count-frame-container {
+            background: white;
+            border-radius: 0.5rem;
+            position: relative;
+            box-shadow: 0 0 0 4px currentColor; 
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .count-frame-grid {
+            display: grid;
+            border-top: 1px solid #e7e5e4;
+            border-left: 1px solid #e7e5e4;
+            width: 100%;
+        }
+
+        .count-frame-cell {
+            aspect-ratio: 1.4 / 1; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            background-color: white;
+            border-right: 1px solid #e7e5e4;
+            border-bottom: 1px solid #e7e5e4;
+            width: 100%;
+        }
+
+        /* 圓點動畫 */
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .dot { 
+            animation: pop 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            width: 65%;       
+            aspect-ratio: 1 / 1; 
+            border-radius: 50%;
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1); 
+        }
+
+        .floating-keyboard {
+            position: absolute;
+            top: 95%;
+            z-index: 1000;
+            filter: drop-shadow(0 15px 25px rgba(0,0,0,0.15));
+            pointer-events: auto;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #f9ebbe; border-radius: 10px; }
+
+        @media print { .no-print { display: none; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Icons = {
+            Info: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
+            X: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>,
+            Sparkles: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12 3 1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3Z" /></svg>,
+            Trash: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" /></svg>,
+            Check: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="20 6 9 17 4 12" /></svg>,
+            Bulb: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A5 5 0 0 0 8 8c0 1.3.5 2.6 1.5 3.5.8.8 1.3 1.5 1.5 2.5"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/></svg>,
+            Settings: (p) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        };
+
+        const App = () => {
+            const [difficulty, setDifficulty] = useState(10); 
+            const [opMode, setOpMode] = useState('+'); 
+            const [showGuide, setShowGuide] = useState(false);
+            const [equation, setEquation] = useState({ num1: '', num2: '', ans1: '', ans2: '' });
+            const [activeField, setActiveField] = useState(null); 
+            const [blueFrame, setBlueFrame] = useState(Array(10).fill(false));
+            const [redFrame, setRedFrame] = useState(Array(10).fill(false));
+            const [checkResult, setCheckResult] = useState(null); 
+
+            useEffect(() => {
+                setBlueFrame(Array(difficulty).fill(false));
+                setRedFrame(Array(difficulty).fill(false));
+                setEquation({ num1: '', num2: '', ans1: '', ans2: '' });
+                setCheckResult(null);
+            }, [difficulty]);
+
+            const handleCircleToggle = (frame, setFrame, index) => {
+                const newFrame = [...frame];
+                newFrame[index] = !newFrame[index];
+                setFrame(newFrame);
+                setCheckResult(null);
+            };
+
+            const handleKeyInput = (val) => {
+                setEquation(prev => ({ ...prev, [activeField]: val }));
+                setCheckResult(null);
+            };
+
+            const clearField = () => {
+                setEquation(prev => ({ ...prev, [activeField]: '' }));
+                setCheckResult(null);
+            };
+
+            const checkAnswer = () => {
+                if (equation.ans1 === '' && equation.ans2 === '') {
+                    setCheckResult('empty');
+                    return;
+                }
+                const n1 = parseInt(equation.num1) || 0;
+                const n2 = parseInt(equation.num2) || 0;
+                const a1 = equation.ans1 === '' ? 0 : parseInt(equation.ans1);
+                const a2 = equation.ans2 === '' ? 0 : parseInt(equation.ans2);
+                
+                let finalAns = 0;
+                if (equation.ans1 !== '' && equation.ans2 !== '') {
+                    finalAns = a1 * 10 + a2;
+                } else if (equation.ans1 !== '') {
+                    finalAns = a1;
+                } else {
+                    finalAns = a2;
+                }
+
+                const correctResult = opMode === '+' ? n1 + n2 : n1 - n2;
+                setCheckResult(finalAns === correctResult ? 'correct' : 'wrong');
+            };
+
+            const Keyboard = ({ type }) => {
+                const isAns = type === 'ans1' || type === 'ans2';
+                const positionClass = isAns ? "right-0" : (type === 'num2' ? "left-1/2 -translate-x-1/2" : "left-0");
+                const maxNum = (type === 'num1' || type === 'num2') ? difficulty : 9;
+
+                // 後方答案鍵盤佈局 (0-9)
+                if (isAns) {
+                    return (
+                        <div className={`floating-keyboard ${positionClass} w-[220px] sm:w-[260px] bg-white border-4 border-[#f9ebbe] rounded-lg p-3 fade-in shadow-2xl`} onClick={e => e.stopPropagation()}>
+                            <div className="mb-3 px-1 flex justify-between items-center">
+                                <span className="text-[14px] sm:text-[16px] font-black text-orange-900 tracking-tighter">輸入數字 (0-9)</span>
+                                <button onClick={() => setActiveField(null)}><Icons.X className="w-4 h-4 text-stone-300" /></button>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1.5 mb-1.5">
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                                    <button key={n} onClick={() => {handleKeyInput(n); setActiveField(null);}} className="h-11 bg-stone-50 hover:bg-orange-500 hover:text-white font-bold transition-colors shadow-sm rounded-lg">{n}</button>
+                                ))}
+                            </div>
+                            <div className="grid grid-cols-3 gap-1.5">
+                                <button onClick={() => {handleKeyInput(0); setActiveField(null);}} className="h-11 bg-stone-50 hover:bg-orange-500 hover:text-white font-bold transition-colors shadow-sm rounded-lg">0</button>
+                                <button onClick={clearField} className="h-11 bg-stone-100 text-stone-400 font-bold flex items-center justify-center hover:bg-stone-200 rounded-lg">
+                                    <Icons.Trash className="w-5 h-5" />
+                                </button>
+                                <button onClick={() => setActiveField(null)} className="h-11 bg-orange-500 text-white font-bold text-sm rounded-lg">關閉</button>
+                            </div>
+                        </div>
+                    );
+                }
+
+                // 前方題目鍵盤佈局 (0-10/15)
+                const nums = Array.from({ length: maxNum + 1 }, (_, i) => i);
+                return (
+                    <div className={`floating-keyboard ${positionClass} w-[240px] sm:w-[280px] bg-white border-4 border-[#f9ebbe] rounded-lg p-4 fade-in shadow-2xl`} onClick={e => e.stopPropagation()}>
+                        <div className="mb-4 px-1 flex justify-between items-center">
+                            <span className="text-[14px] sm:text-[16px] font-black text-orange-900 tracking-tighter">輸入數字 (0-{maxNum})</span>
+                            <button onClick={() => setActiveField(null)}><Icons.X className="w-4 h-4 text-stone-300" /></button>
+                        </div>
+                        <div className="grid grid-cols-4 gap-1.5 mb-3">
+                            {nums.map(n => (
+                                <button key={n} onClick={() => {handleKeyInput(n); setActiveField(null);}} className="h-10 bg-stone-50 hover:bg-orange-500 hover:text-white font-bold transition-colors shadow-sm rounded-lg">{n}</button>
+                            ))}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button onClick={clearField} className="h-10 bg-stone-100 text-stone-400 font-bold flex items-center justify-center hover:bg-stone-200 rounded-lg">
+                                <Icons.Trash className="w-5 h-5" />
+                            </button>
+                            <button onClick={() => setActiveField(null)} className="h-10 bg-orange-500 text-white font-bold text-sm rounded-lg">關閉</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="app-container p-2 sm:p-4 min-h-screen flex flex-col items-center justify-start" onClick={() => setActiveField(null)}>
+                    
+                    <div className="w-full max-w-[900px] min-h-[90vh] bg-white rounded-2xl sm:rounded-[3rem] shadow-2xl border-[6px] sm:border-[12px] border-[#f9ebbe] relative flex flex-col p-4 sm:p-10 my-2 sm:my-6 fade-in overflow-hidden">
+                        
+                        <button onClick={(e) => { e.stopPropagation(); setShowGuide(true); }} className="absolute top-4 right-4 text-[#ff8c42] p-2 hover:bg-orange-50 rounded-full transition-all z-50">
+                            <Icons.Info className="w-6 h-6 sm:w-8 sm:h-8" />
+                        </button>
+
+                        <div className="text-center pt-2 pb-6 flex flex-col items-center">
+                            <div className="inline-flex items-center gap-2 px-4 py-1 bg-orange-100 text-[#ff8c42] rounded-full text-[11px] font-black tracking-widest mb-2 shadow-sm uppercase">
+                                <Icons.Sparkles className="w-3.5 h-3.5" /> 教學輔助工具
+                            </div>
+                            <h1 className="text-3xl sm:text-5xl font-[900] text-orange-950 tracking-[0.1em] mb-1 uppercase leading-none">十格加減法</h1>
+                            <p className="text-[#433422]/70 font-normal text-[11px] sm:text-[14px] mb-4 uppercase text-center tracking-wide px-4 leading-relaxed">
+                                透過直觀的十格陣與圓點操作，培養小朋友的數感與基礎運算能力
+                            </p>
+                        </div>
+
+                        <div className="px-0 mb-8 flex flex-col items-center w-full max-w-[650px] mx-auto no-print">
+                            <div className="flex flex-row justify-center items-end gap-2 sm:gap-3 w-full">
+                                <div className="flex flex-col gap-1 flex-1">
+                                    <span className="text-[11px] font-black text-orange-800/40 uppercase text-center w-full">難度設定</span>
+                                    <div className="toggle-container">
+                                        <button onClick={(e) => { e.stopPropagation(); setDifficulty(10); }} className={`toggle-btn ${difficulty === 10 ? 'active' : 'inactive'}`}>10</button>
+                                        <button onClick={(e) => { e.stopPropagation(); setDifficulty(15); }} className={`toggle-btn ${difficulty === 15 ? 'active' : 'inactive'}`}>15</button>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-1 flex-1">
+                                    <span className="text-[11px] font-black text-orange-800/40 uppercase text-center w-full">運算模式</span>
+                                    <div className="toggle-container">
+                                        <button onClick={(e) => { e.stopPropagation(); setOpMode('+'); }} className={`toggle-btn ${opMode === '+' ? 'active' : 'inactive'}`}>加法</button>
+                                        <button onClick={(e) => { e.stopPropagation(); setOpMode('-'); }} className={`toggle-btn ${opMode === '-' ? 'active' : 'inactive'}`}>減法</button>
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-1 flex-1">
+                                    <span className="text-[11px] font-black text-transparent select-none uppercase hidden md:block">.</span>
+                                    <button onClick={(e) => { e.stopPropagation(); checkAnswer(); }} className="unified-btn bg-stone-700 hover:bg-stone-800 shadow-sm">
+                                        檢查答案
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="relative flex flex-col items-center mb-10 w-full">
+                            <div id="equation-box" className="relative flex flex-wrap items-center justify-center gap-2 sm:gap-4 py-8 px-6 sm:px-10 bg-orange-50/60 rounded-xl w-full max-w-[650px] mx-auto shadow-sm">
+                                <div className="relative">
+                                    <div onClick={(e) => { e.stopPropagation(); setActiveField('num1'); }} className={`w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center text-2xl sm:text-4xl font-black rounded-lg border-[3px] sm:border-4 transition-all cursor-pointer shadow-inner ${activeField === 'num1' ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100' : 'border-blue-400 bg-blue-50 text-blue-600'}`}>
+                                        {equation.num1 !== '' ? equation.num1 : <span className="opacity-20 text-lg font-normal">?</span>}
+                                    </div>
+                                    {activeField === 'num1' && <Keyboard type="num1" />}
+                                </div>
+                                <span className="text-3xl sm:text-5xl font-black text-orange-950 mx-0.5 sm:mx-1 select-none">
+                                    {opMode === '+' ? '＋' : '－'}
+                                </span>
+                                <div className="relative">
+                                    <div onClick={(e) => { e.stopPropagation(); setActiveField('num2'); }} className={`w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center text-2xl sm:text-4xl font-black rounded-lg border-[3px] sm:border-4 transition-all cursor-pointer shadow-inner ${activeField === 'num2' ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100' : 'border-red-400 bg-red-50 text-red-600'}`}>
+                                        {equation.num2 !== '' ? equation.num2 : <span className="opacity-20 text-lg font-normal">?</span>}
+                                    </div>
+                                    {activeField === 'num2' && <Keyboard type="num2" />}
+                                </div>
+                                <span className="text-3xl sm:text-5xl font-black text-orange-950 mx-0.5 sm:mx-1">＝</span>
+                                <div className="flex gap-1.5 sm:gap-2">
+                                    <div className="relative">
+                                        <div onClick={(e) => { e.stopPropagation(); setActiveField('ans1'); }} className={`w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center text-2xl sm:text-4xl font-black rounded-lg border-[3px] sm:border-4 transition-all cursor-pointer shadow-inner ${activeField === 'ans1' ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100' : 'border-stone-200 bg-white text-stone-700'}`}>
+                                            {equation.ans1 !== '' ? equation.ans1 : <span className="opacity-10 text-[10px] sm:text-sm font-normal">?</span>}
+                                        </div>
+                                        {activeField === 'ans1' && <Keyboard type="ans1" />}
+                                    </div>
+                                    <div className="relative">
+                                        <div onClick={(e) => { e.stopPropagation(); setActiveField('ans2'); }} className={`w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center text-2xl sm:text-4xl font-black rounded-lg border-[3px] sm:border-4 transition-all cursor-pointer shadow-inner ${activeField === 'ans2' ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100' : 'border-stone-200 bg-white text-stone-700'}`}>
+                                            {equation.ans2 !== '' ? equation.ans2 : <span className="opacity-10 text-[10px] sm:text-sm font-normal">?</span>}
+                                        </div>
+                                        {activeField === 'ans2' && <Keyboard type="ans2" />}
+                                    </div>
+                                </div>
+
+                                {checkResult && (
+                                    <div className={`absolute -bottom-5 px-6 py-1.5 rounded-lg font-black text-white shadow-lg fade-in text-[10px] sm:text-xs z-10
+                                        ${checkResult === 'correct' ? 'bg-green-500' : checkResult === 'wrong' ? 'bg-red-500' : 'bg-orange-400'}`}>
+                                        {checkResult === 'correct' ? '答對了！太棒了 ✨' : checkResult === 'wrong' ? '再檢查看看喔 💡' : '還沒輸入唷 ✍️'}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex flex-row gap-4 sm:gap-6 justify-center w-full max-w-[650px] mx-auto pb-8">
+                            <div className="flex flex-col flex-1 items-center">
+                                <div className="flex items-center justify-center mb-3 px-1 relative" style={{ width: difficulty === 10 ? '66.66%' : '100%' }}>
+                                    <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-blue-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md">藍色區</span>
+                                    <button onClick={() => setBlueFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-blue-500 transition-colors absolute right-0 top-1/2 -translate-y-1/2">
+                                        <Icons.Trash className="w-5 h-5 sm:w-6 sm:h-6" />
+                                    </button>
+                                </div>
+                                <div className="count-frame-container text-blue-400" style={{ width: difficulty === 10 ? '66.66%' : '100%' }}>
+                                    <div className="count-frame-grid" style={{ gridTemplateColumns: `repeat(${difficulty === 10 ? 2 : 3}, 1fr)` }}>
+                                        {blueFrame.map((filled, i) => (
+                                            <div key={i} className="count-frame-cell" onClick={() => handleCircleToggle(blueFrame, setBlueFrame, i)}>
+                                                {filled && <div className="dot bg-blue-500"></div>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex flex-col flex-1 items-center">
+                                <div className="flex items-center justify-center mb-3 px-1 relative" style={{ width: difficulty === 10 ? '66.66%' : '100%' }}>
+                                    <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-red-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md">紅色區</span>
+                                    <button onClick={() => setRedFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-red-500 transition-colors absolute right-0 top-1/2 -translate-y-1/2">
+                                        <Icons.Trash className="w-5 h-5 sm:w-6 sm:h-6" />
+                                    </button>
+                                </div>
+                                <div className="count-frame-container text-red-400" style={{ width: difficulty === 10 ? '66.66%' : '100%' }}>
+                                    <div className="count-frame-grid" style={{ gridTemplateColumns: `repeat(${difficulty === 10 ? 2 : 3}, 1fr)` }}>
+                                        {redFrame.map((filled, i) => (
+                                            <div key={i} className="count-frame-cell" onClick={() => handleCircleToggle(redFrame, setRedFrame, i)}>
+                                                {filled && <div className="dot bg-red-500"></div>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 指南 Modal */}
+                    {showGuide && (
+                        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowGuide(false)}>
+                            <div className="bg-white rounded-[2rem] max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border-8 border-[#f9ebbe] p-6 sm:p-10 fade-in relative custom-scrollbar" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setShowGuide(false)} className="absolute top-6 right-6 text-stone-300 hover:text-stone-50"><Icons.X className="w-6 h-6" /></button>
+                                
+                                <div className="flex flex-col items-center mb-8">
+                                    <h2 className="text-3xl sm:text-4xl font-[900] text-orange-950 text-center">十格加減法：快速指南</h2>
+                                </div>
+
+                                <div className="space-y-10">
+                                    <section>
+                                        <h3 className="flex items-center gap-2 text-xl font-black text-orange-900 mb-4"><Icons.Bulb className="w-6 h-6" /> 為什麼要玩這個？</h3>
+                                        <ul className="space-y-3 text-stone-600 font-bold text-base leading-relaxed ml-1">
+                                            <li className="flex gap-2"><span>•</span> 強化數感直覺：將數字轉化為實體圓點，建立認知。</li>
+                                            <li className="flex gap-2"><span>•</span> 掌握十進位邏輯：透過十格佈局，自然練習運算技巧。</li>
+                                            <li className="flex gap-2"><span>•</span> 視覺化運算：操作獨立計數區，邏輯清晰可見。</li>
+                                        </ul>
+                                    </section>
+
+                                    <section>
+                                        <h3 className="flex items-center gap-2 text-xl font-black text-orange-900 mb-5">🕹️ 遊戲四部曲</h3>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div className="bg-orange-50/50 p-5 rounded-xl border border-orange-100">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div className="w-7 h-7 bg-orange-200 text-orange-700 rounded-full flex items-center justify-center text-sm font-black shrink-0">1</div>
+                                                    <div className="font-black text-orange-950 text-base">設題目</div>
+                                                </div>
+                                                <div className="text-sm text-stone-500 font-bold ml-9">設定難度與模式，並在方框輸入數字。</div>
+                                            </div>
+                                            <div className="bg-orange-50/50 p-5 rounded-xl border border-orange-100">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div className="w-7 h-7 bg-orange-200 text-orange-700 rounded-full flex items-center justify-center text-sm font-black shrink-0">2</div>
+                                                    <div className="font-black text-orange-950 text-base">排點點</div>
+                                                </div>
+                                                <div className="text-sm text-stone-500 font-bold ml-9">在下方藍色區與紅色區放入圓點。</div>
+                                            </div>
+                                            <div className="bg-orange-50/50 p-5 rounded-xl border border-orange-100">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div className="w-7 h-7 bg-orange-200 text-orange-700 rounded-full flex items-center justify-center text-sm font-black shrink-0">3</div>
+                                                    <div className="font-black text-orange-950 text-base">看變化</div>
+                                                </div>
+                                                <div className="text-sm text-stone-500 font-bold ml-9">觀察兩組關係，判斷格子的運算結果。</div>
+                                            </div>
+                                            <div className="bg-orange-50/50 p-5 rounded-xl border border-orange-100">
+                                                <div className="flex items-center gap-2 mb-3">
+                                                    <div className="w-7 h-7 bg-orange-200 text-orange-700 rounded-full flex items-center justify-center text-sm font-black shrink-0">4</div>
+                                                    <div className="font-black text-orange-950 text-base">對答案</div>
+                                                </div>
+                                                <div className="text-sm text-stone-500 font-bold ml-9">在等號後輸入結果，點擊檢查答案！</div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section>
+                                        <h3 className="flex items-center gap-2 text-xl font-black text-orange-900 mb-4"><Icons.Settings className="w-6 h-6" /> 教師與家長控制項</h3>
+                                        <ul className="space-y-3 text-stone-600 font-bold text-base leading-relaxed ml-1">
+                                            <li className="flex gap-2"><span>•</span> 難度切換：10 級與 15 級，格子自動連動。</li>
+                                            <li className="flex gap-2"><span>•</span> 運算模式：加法與減法自由切換。</li>
+                                            <li className="flex gap-2"><span>•</span> 精準清除：每個區域皆有獨立垃圾桶可清空。</li>
+                                        </ul>
+                                    </section>
+                                </div>
+
+                                <button onClick={() => setShowGuide(false)} className="w-full mt-12 py-5 bg-orange-950 text-white rounded-2xl font-black text-lg shadow-xl hover:bg-orange-900 transition-all">開始練習</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
