@@ -132,7 +132,7 @@
             box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1); 
         }
 
-        /* 響應式寬度控制：修正手機版 10 格拉寬至 95% */
+        /* 響應式寬度控制：手機版 10 格拉寬至 95% */
         .grid-wrapper-10 {
             width: 95%;
         }
@@ -145,7 +145,7 @@
         .floating-keyboard {
             position: absolute;
             top: 95%;
-            z-index: 1000;
+            z-index: 2000; /* 提高層級確保不被擋住 */
             filter: drop-shadow(0 15px 25px rgba(0,0,0,0.15));
             pointer-events: auto;
         }
@@ -325,7 +325,8 @@
                         </div>
 
                         <div className="relative flex flex-col items-center mb-10 w-full">
-                            <div id="equation-box" className="relative flex flex-nowrap items-center justify-center gap-1.5 sm:gap-4 py-8 px-3 sm:px-10 bg-orange-50/60 rounded-xl w-full max-w-[650px] mx-auto shadow-sm overflow-hidden">
+                            {/* 修正：移除 overflow-hidden 以免遮擋跳出的小鍵盤 */}
+                            <div id="equation-box" className="relative flex flex-nowrap items-center justify-center gap-1.5 sm:gap-4 py-8 px-3 sm:px-10 bg-orange-50/60 rounded-xl w-full max-w-[650px] mx-auto shadow-sm">
                                 <div className="relative flex-shrink-0">
                                     <div onClick={(e) => { e.stopPropagation(); setActiveField('num1'); }} className={`w-14 h-14 sm:w-20 sm:h-20 flex items-center justify-center text-2xl sm:text-4xl font-black rounded-lg border-[3px] sm:border-4 transition-all cursor-pointer shadow-inner ${activeField === 'num1' ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-100' : 'border-blue-400 bg-blue-50 text-blue-600'}`}>
                                         {equation.num1 !== '' ? equation.num1 : <span className="opacity-20 text-lg font-normal">?</span>}
@@ -368,7 +369,6 @@
 
                         <div className="flex flex-row gap-4 sm:gap-6 justify-center w-full max-w-[650px] mx-auto pb-8">
                             <div className="flex flex-col flex-1 items-center">
-                                {/* 修正：垃圾桶在手機版移動到 -right-1 避免擠壓標籤 */}
                                 <div className={`flex items-center justify-center mb-3 px-1 relative ${difficulty === 10 ? 'grid-wrapper-10' : 'w-full'}`}>
                                     <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-blue-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md whitespace-nowrap">藍色區</span>
                                     <button onClick={() => setBlueFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-blue-500 transition-colors absolute -right-1 sm:right-0 top-1/2 -translate-y-1/2">
@@ -386,7 +386,6 @@
                                 </div>
                             </div>
                             <div className="flex flex-col flex-1 items-center">
-                                {/* 修正：垃圾桶在手機版移動到 -right-1 避免擠壓標籤 */}
                                 <div className={`flex items-center justify-center mb-3 px-1 relative ${difficulty === 10 ? 'grid-wrapper-10' : 'w-full'}`}>
                                     <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-red-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md whitespace-nowrap">紅色區</span>
                                     <button onClick={() => setRedFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-red-500 transition-colors absolute -right-1 sm:right-0 top-1/2 -translate-y-1/2">
