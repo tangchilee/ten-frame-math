@@ -232,11 +232,11 @@
 
             const Keyboard = ({ type }) => {
                 const isAns = type === 'ans1' || type === 'ans2';
-                // 修正：針對手機版上的 num2 (紅色框)，將其改為靠右對齊 (right-0)，避免超出螢幕
+                // 修正：將 num2 在手機版改為靠左對齊 (left-0)，確保左邊不會出界
                 const positionClass = isAns 
                     ? "right-0" 
                     : (type === 'num2' 
-                        ? "right-0 sm:left-1/2 sm:-translate-x-1/2" 
+                        ? "left-0 sm:left-1/2 sm:-translate-x-1/2" 
                         : "left-0");
                 const maxNum = (type === 'num1' || type === 'num2') ? difficulty : 9;
 
@@ -392,7 +392,7 @@
                             <div className="flex flex-col flex-1 items-center">
                                 <div className={`flex items-center justify-center mb-3 px-1 relative ${difficulty === 10 ? 'grid-wrapper-10' : 'w-full'}`}>
                                     <span className="px-6 py-1.5 sm:px-8 sm:py-2 bg-red-500 text-white rounded-md text-[14px] sm:text-[18px] font-black tracking-[0.2em] uppercase shadow-md whitespace-nowrap">紅色區</span>
-                                    <button onClick={() => setRedFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-blue-500 transition-colors absolute -right-1 sm:right-0 top-1/2 -translate-y-1/2">
+                                    <button onClick={() => setRedFrame(Array(difficulty).fill(false))} className="text-stone-300 hover:text-red-500 transition-colors absolute -right-1 sm:right-0 top-1/2 -translate-y-1/2">
                                         <Icons.Trash className="w-5 h-5 sm:w-6 sm:h-6" />
                                     </button>
                                 </div>
